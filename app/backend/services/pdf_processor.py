@@ -15,7 +15,7 @@ def convert_pdf_to_markdown(pdf_bytes: bytes) -> str:
     Returns:
         str: Markdown形式の全文
     """
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp.write(pdf_bytes)
         tmp.flush()
         md = pymupdf4llm.to_markdown(tmp.name)
