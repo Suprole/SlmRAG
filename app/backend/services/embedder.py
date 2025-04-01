@@ -1,15 +1,22 @@
-import numpy as np
+from sentence_transformers import SentenceTransformer
+from typing import List
+
+# 軽量＆高精度な汎用モデル（推奨）
+MODEL_NAME = "all-MiniLM-L6-v2"
+
+# モデルの初期化（warm start前提）
+_model = SentenceTransformer(MODEL_NAME)
 
 
-def vectorize_text(text: str) -> list[float]:
+def vectorize_text(text: str) -> List[float]:
     """
-    テキストをベクトルに変換する。ダミーではランダムなベクトルを返す。
+    チャンク化されたテキストをベクトルに変換する。
 
     Args:
-        text (str): 入力テキスト
+        text (str): 1チャンクの本文テキスト
 
     Returns:
-        list[float]: ベクトル（768次元など）
+        List[float]: 正規化済みベクトル（384次元）
     """
-    # TODO: 実際は事前学習済みモデルなどに置き換え
-    return np.random.rand(768).astype("float32").tolist()
+    embedding = _model.encode(text, normalize_embeddings=True)
+    return embedding.tolist()
