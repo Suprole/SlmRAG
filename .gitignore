@@ -1,0 +1,29 @@
+# 依存関係周り
+
+venv
+./venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/*.pyi
+**/*.pyz
+**/*.pyw
+
+# IDE周り
+
+.vscode
+.helloworld
+.clinerules
+.github
+.cursor
+
+# model
+
+./models
+models
+
+.helloworld
+.helloworld/*
+.helloworld/**

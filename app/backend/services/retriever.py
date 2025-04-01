@@ -1,0 +1,23 @@
+from services import embedder, faiss_manager
+from services.models import get_chunk_by_id  # SQLiteモデル（models.pyに定義されている前提）
+import numpy as np
+
+
+def retrieve_top_chunks(document_id: str, query: str, top_k: int = 3) -> list[dict]:
+    """
+    クエリをベクトル化し、FAISSでtop_k件の近傍チャンクを検索・取得する。
+
+    Args:
+        document_id (str): 検索対象のドキュメントID
+        query (str): ユーザーの質問
+        top_k (int): 上位何件を取得するか
+
+    Returns:
+        list[dict]: チャンクのメタ情報リスト
+    """
+    index, chunk_ids = faiss_manager.load_index(document_id)
+    query_vector = np.array([embedder.vectorize_text(query)], dtype="float32")
+    _, indices = index.search(query_vector, top_k)
+
+    top_chunk_ids = [chunk_ids[i] for i in indices[0] if i < len(chunk_ids)]
+    return [get_chunk_by_id(cid) for cid in top_chunk_ids]
