@@ -49,3 +49,7 @@ def chunk_markdown(markdown: str) -> List[Dict]:
             "position": i + 1
         })
     return chunks
+
+if __name__ == "__main__":
+
+    pass
