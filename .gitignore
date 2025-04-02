@@ -29,3 +29,5 @@ models
 .helloworld/**
 
 app/backend/data
+.pytest_cache
+
