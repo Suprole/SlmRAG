@@ -8,4 +8,5 @@
 - faiss_manager: FAISSベクトルインデックスの管理
 - retriever: 類似文書の検索
 - generator: 質問応答の生成
+- logger: アプリケーションロギング機能
 """

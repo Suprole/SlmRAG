@@ -1,8 +1,12 @@
 from llama_cpp import Llama
 from typing import List, Dict, Tuple
 import os
+from .logger import Logger
 
 MODEL_PATH = os.path.join("models", "tinyswallow-1.5b-instruct-q8_0.gguf")
+
+# ロガーの初期化
+logger = Logger(name="generator")
 
 llm = Llama(
     model_path=MODEL_PATH,
@@ -12,7 +16,13 @@ llm = Llama(
 )
 
 # slmのwarm start
+logger.info("LLMモデルをウォームアップしています")
 llm("こんにちは。", max_tokens=0)
+# ストリーミングモードでも初期化しておく
+logger.info("LLMモデルをストリーミングモードでウォームアップしています")
+for _ in llm("こんにちは。", max_tokens=1, stream=True):
+    pass
+logger.info("LLMモデルのウォームアップが完了しました")
 
 def build_prompt(query: str, chunks: List[Dict]) -> str:
     """
@@ -25,6 +35,7 @@ def build_prompt(query: str, chunks: List[Dict]) -> str:
     Returns:
         str: LLMに渡すプロンプト
     """
+    logger.debug(f"プロンプト構築開始: 質問「{query}」、チャンク数: {len(chunks)}")
     system_prompt = "あなたは誠実で優秀なアシスタントです。"
 
     references = "\n".join(
@@ -49,6 +60,7 @@ def build_prompt(query: str, chunks: List[Dict]) -> str:
 
     # debug: print(prompt)
     print(prompt)
+    logger.debug("プロンプト構築完了")
     return prompt
 
 
@@ -63,8 +75,10 @@ def generate_answer(query: str, chunks: List[Dict]) -> Tuple[str, List[Dict]]:
     Returns:
         tuple: (回答テキスト, 引用情報リスト)
     """
+    logger.info(f"回答生成開始: 質問「{query}」、チャンク数: {len(chunks)}")
     prompt = build_prompt(query, chunks)
 
+    logger.debug("LLMへのリクエスト送信")
     output = llm(
         prompt=prompt,
         max_tokens=512,
@@ -87,4 +101,37 @@ def generate_answer(query: str, chunks: List[Dict]) -> Tuple[str, List[Dict]]:
         for i, chunk in enumerate(chunks)
     ]
 
+    logger.info(f"回答生成完了: 回答文字数 {len(answer)}")
     return answer, citations
+
+def generate_answer_stream(query: str, chunks: List[Dict]):
+    """
+    ストリーミングモードでLLMからの回答を生成するジェネレータ関数。
+    トークンごとに返すことでフロントエンドでのUXを向上させる。
+
+    Args:
+        query (str): 質問内容
+        chunks (list): 関連チャンクのリスト
+
+    Yields:
+        str: 生成されたトークン
+    """
+    logger.info(f"ストリーミング回答生成開始: 質問「{query}」、チャンク数: {len(chunks)}")
+    prompt = build_prompt(query, chunks)
+
+    logger.debug("LLMへのストリーミングリクエスト送信")
+    output = llm(
+        prompt=prompt,
+        max_tokens=512,
+        stop=["<|im_end|>"],
+        echo=False,
+        stream=True
+    )
+
+    for chunk in output:
+        token = chunk["choices"][0]["text"]
+        if token:
+            logger.debug(f"トークン生成: {token}")
+            yield token
+
+    logger.info("ストリーミング回答生成完了")

@@ -22,7 +22,26 @@ def chat(query: ChatQuery):
         raise HTTPException(status_code=404, detail="No relevant chunks found")
 
     async def generate():
-        answer, citations = generator.generate_answer(query.query, chunks)
+        answer = ""
+        citations = []
+        
+        for token in generator.generate_answer_stream(query.query, chunks):
+            answer += token
+            response_data = {
+                "answer": answer,
+                "citations": citations
+            }
+            yield json.dumps(response_data) + "\n"
+        
+        # 最終的な引用情報を追加
+        citations = [
+            {
+                "chunk_id": chunk["chunk_id"],
+                "text": chunk["text"],
+                "reference": f"[{i + 1}]"
+            }
+            for i, chunk in enumerate(chunks)
+        ]
         yield json.dumps({"answer": answer, "citations": citations}) + "\n"
 
     return StreamingResponse(generate(), media_type="application/json")
