@@ -42,3 +42,12 @@ export async function getChunks(documentId: string): Promise<Chunk[]> {
   }
   return res.json();
 }
+
+export async function deleteDocument(documentId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/docs/${documentId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error("Failed to delete document");
+  }
+}

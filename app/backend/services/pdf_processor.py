@@ -34,8 +34,8 @@ def chunk_markdown(markdown: str) -> List[Dict]:
         list[dict]: チャンク情報のリスト
     """
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100,
+        chunk_size=100,
+        chunk_overlap=20,
         separators=["\n\n", "\n", "。", "、", " ", ""]
     )
     docs = splitter.create_documents([markdown])

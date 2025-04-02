@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from services import retriever, generator, models
+import json
 
 router = APIRouter()
 
@@ -19,5 +21,8 @@ def chat(query: ChatQuery):
     if not chunks:
         raise HTTPException(status_code=404, detail="No relevant chunks found")
 
-    answer, citations = generator.generate_answer(query.query, chunks)
-    return {"answer": answer, "citations": citations}
+    async def generate():
+        answer, citations = generator.generate_answer(query.query, chunks)
+        yield json.dumps({"answer": answer, "citations": citations}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/json")

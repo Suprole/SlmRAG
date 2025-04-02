@@ -11,6 +11,8 @@ llm = Llama(
     use_mlock=True
 )
 
+# slmのwarm start
+llm("こんにちは。", max_tokens=0)
 
 def build_prompt(query: str, chunks: List[Dict]) -> str:
     """
@@ -44,6 +46,9 @@ def build_prompt(query: str, chunks: List[Dict]) -> str:
         "<|im_end|>\n"
         "<|im_start|>assistant\n"
     )
+
+    # debug: print(prompt)
+    print(prompt)
     return prompt
 
 
@@ -64,10 +69,14 @@ def generate_answer(query: str, chunks: List[Dict]) -> Tuple[str, List[Dict]]:
         prompt=prompt,
         max_tokens=512,
         stop=["<|im_end|>"],
-        echo=False
+        echo=False,
+        stream=True
     )
 
-    answer = output["choices"][0]["text"].strip()
+    answer = ""
+    for chunk in output:
+        if chunk["choices"][0]["text"]:
+            answer += chunk["choices"][0]["text"]
 
     citations = [
         {

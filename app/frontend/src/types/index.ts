@@ -20,4 +20,10 @@ export interface Chunk {
     document_id: string;
     title: string;
   }
+
+  export type ChatMessage = {
+    role: "user" | "assistant";
+    content: string;
+    citations?: Citation[];
+  };
   
