@@ -6,6 +6,7 @@ import { getChunks } from "../api/docs";
 import { postChat } from "../api/chat";
 import { Chunk, ChatMessage } from "../types";
 import SidePanel from "../components/SidePanel";
+import ReactMarkdown from "react-markdown";
 
 const Chat: React.FC = () => {
   const { documentId } = useParams();
@@ -116,7 +117,13 @@ const Chat: React.FC = () => {
                         : "bg-secondary-100 text-secondary-900"
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    {msg.role === "user" ? (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    ) : (
+                      <div className="prose prose-sm max-w-none prose-headings:text-secondary-900 prose-p:text-secondary-800 prose-a:text-primary-600 prose-strong:text-secondary-900 prose-code:text-secondary-800 prose-code:bg-secondary-100 prose-code:rounded prose-code:px-1 prose-code:py-0.5 prose-pre:bg-secondary-100 prose-li:text-secondary-800">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    )}
                     {msg.citations && msg.citations.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-secondary-200 flex flex-wrap gap-1">
                         <span className="text-xs font-medium mr-1">引用:</span>

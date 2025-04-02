@@ -55,11 +55,11 @@ def chunk_markdown(markdown: str) -> List[Dict]:
     logger.info(f"Markdownのチャンク化開始: 文字数 {len(markdown)}")
     
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=100,
-        chunk_overlap=20,
+        chunk_size=200,
+        chunk_overlap=40,
         separators=["\n\n", "\n", "。", "、", " ", ""]
     )
-    logger.debug("テキストスプリッターを初期化: チャンクサイズ=100, オーバーラップ=20")
+    logger.debug("テキストスプリッターを初期化: チャンクサイズ=200, オーバーラップ=40")
     
     docs = splitter.create_documents([markdown])
     logger.debug(f"ドキュメント分割完了: {len(docs)}個のチャンクを生成")
