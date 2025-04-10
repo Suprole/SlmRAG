@@ -7,7 +7,7 @@ from .logger import Logger
 logger = Logger(name="retriever")
 
 
-def retrieve_top_chunks(document_id: str, query: str, top_k: int = 1) -> list[dict]:
+def retrieve_top_chunks(document_id: str, query: str, top_k: int = 2) -> list[dict]:
     """
     クエリをベクトル化し、FAISSでtop_k件の近傍チャンクを検索・取得する。
 
