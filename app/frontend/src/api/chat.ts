@@ -26,8 +26,16 @@ export async function postChat(
     const { done, value } = await reader.read();
     if (done) break;
 
-    const chunk = new TextDecoder().decode(value);
-    const data = JSON.parse(chunk);
-    onChunk(data);
+    const text = new TextDecoder().decode(value);
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    
+    for (const line of lines) {
+      try {
+        const data = JSON.parse(line);
+        onChunk(data);
+      } catch (error) {
+        console.error('JSON parse error:', error, 'for line:', line);
+      }
+    }
   }
 }

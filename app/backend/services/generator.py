@@ -3,7 +3,7 @@ from typing import List, Dict, Tuple
 import os
 from .logger import Logger
 
-MODEL_PATH = os.path.join("models", "sarashina2.2-0.5b-instruct-v0.1-Q8_0.gguf")
+MODEL_PATH = os.path.join("models", "tinyswallow-1.5b-instruct-q5_k_m.gguf")  # Llamaモデルのパス
 
 # ロガーの初期化
 logger = Logger(name="generator")
