@@ -1,0 +1,37 @@
+name: Deploy to Hugging Face
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install huggingface_hub pytest
+
+      - name: Run tests
+        run: |
+          cd app/backend
+          pip install -r requirements.txt
+          pytest tests/
+
+      - name: Deploy to Hugging Face
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME || 'rag-chat-app' }}
+        run: |
+          chmod +x ./huggingface-deploy.sh
+          ./huggingface-deploy.sh

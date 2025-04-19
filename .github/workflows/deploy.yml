@@ -1,0 +1,32 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main # メインブランチ
+      - feature/deploy # デプロイ用フィーチャーブランチ
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Git credentials
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Push to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          SPACE_NAME: ${{ secrets.SPACE_NAME }}
+        run: |
+          # Hugging Face認証用のGit設定
+          git remote add space https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$SPACE_NAME
+
+          # 現在のブランチをHugging Face Spaceのmainにフォースプッシュ
+          # これにより、現在のブランチ（main または feature/deploy）がデプロイされます
+          git push --force space HEAD:main
