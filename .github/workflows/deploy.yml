@@ -5,6 +5,7 @@ on:
     branches:
       - main # メインブランチ
       - feature/deploy # デプロイ用フィーチャーブランチ
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -12,6 +13,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full clone instead of shallow clone
+
+      - name: Setup Git LFS
+        run: |
+          git lfs install
+          git lfs pull
 
       - name: Set up Git credentials
         run: |
@@ -27,6 +35,6 @@ jobs:
           # Hugging Face認証用のGit設定
           git remote add space https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$SPACE_NAME
 
-          # 現在のブランチをHugging Face Spaceのmainにフォースプッシュ
-          # これにより、現在のブランチ（main または feature/deploy）がデプロイされます
-          git push --force space HEAD:main
+          # 現在のブランチをHugging Face Spaceのmainにプッシュ
+          # --force オプションは必要な場合のみ使用する
+          git push space HEAD:main
