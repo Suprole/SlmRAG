@@ -1,6 +1,9 @@
 import { Chunk } from "../types/index";
 
-const API_URL = "http://localhost:8000/api";
+// API URL will adapt to the current environment
+const API_URL = window.location.hostname === 'localhost' 
+  ? "http://localhost:8000/api" 
+  : "/api";
 
 export async function uploadPdf(file: File): Promise<{ document_id: string }> {
   const formData = new FormData();

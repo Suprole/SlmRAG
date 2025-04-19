@@ -3,32 +3,36 @@ import os
 from typing import Optional, Dict, List
 from datetime import datetime
 from .logger import Logger
+from .memory_store import is_huggingface_space
 
 # ロガーの初期化
 logger = Logger(name="models")
 
 DB_PATH = "data/db/documents.db"
 
+# In-memory connection for Hugging Face Spaces
+_memory_connection = None
 
-def init_db():
-    """
-    Initialize the SQLite database with necessary tables.
+
+def _get_connection():
+    """Get SQLite connection (in-memory for Hugging Face Spaces, file-based otherwise)"""
+    global _memory_connection
     
-    Creates two tables:
-    - documents: Stores document metadata
-    - chunks: Stores document content chunks for retrieval
-    
-    If the database file does not exist, it will be created.
-    If the tables already exist, this function has no effect.
-    """
-    logger.info("データベースの初期化を開始")
-    
-    db_dir = os.path.dirname(DB_PATH)
-    if not os.path.exists(db_dir):
-        logger.debug(f"データベースディレクトリを作成: {db_dir}")
-        os.makedirs(db_dir, exist_ok=True)
-    
-    conn = sqlite3.connect(DB_PATH)
+    if is_huggingface_space():
+        # Use in-memory SQLite for Hugging Face Spaces
+        if _memory_connection is None:
+            logger.info("Using in-memory SQLite database for Hugging Face Spaces")
+            _memory_connection = sqlite3.connect(":memory:")
+            # Initialize tables in the in-memory database
+            _init_tables(_memory_connection)
+        return _memory_connection
+    else:
+        # Use file-based SQLite for local development
+        return sqlite3.connect(DB_PATH)
+
+
+def _init_tables(conn):
+    """Initialize database tables"""
     cur = conn.cursor()
     
     logger.debug("documentsテーブルの作成")
@@ -52,8 +56,37 @@ def init_db():
     """)
     
     conn.commit()
+
+
+def init_db():
+    """
+    Initialize the SQLite database with necessary tables.
+    
+    Creates two tables:
+    - documents: Stores document metadata
+    - chunks: Stores document content chunks for retrieval
+    
+    If the database file does not exist, it will be created.
+    If the tables already exist, this function has no effect.
+    """
+    logger.info("データベースの初期化を開始")
+    
+    if is_huggingface_space():
+        # For Hugging Face Spaces, initialization happens when getting the connection
+        _get_connection()
+        logger.info("Hugging Face Spaces用のメモリ内データベースを初期化しました")
+        return
+    
+    # Local development path
+    db_dir = os.path.dirname(DB_PATH)
+    if not os.path.exists(db_dir):
+        logger.debug(f"データベースディレクトリを作成: {db_dir}")
+        os.makedirs(db_dir, exist_ok=True)
+    
+    conn = sqlite3.connect(DB_PATH)
+    _init_tables(conn)
     conn.close()
-    logger.info("データベースの初期化が完了しました")
+    logger.info("ファイルベースのデータベースの初期化が完了しました")
 
 
 def insert_document(document_id: str, title: str, created_at: datetime) -> None:
@@ -70,7 +103,7 @@ def insert_document(document_id: str, title: str, created_at: datetime) -> None:
     """
     logger.info(f"新規ドキュメント追加: ID「{document_id}」、タイトル「{title}」")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cur = conn.cursor()
     try:
         cur.execute(
@@ -83,7 +116,8 @@ def insert_document(document_id: str, title: str, created_at: datetime) -> None:
         logger.error(f"ドキュメント追加エラー: {e}")
         raise
     finally:
-        conn.close()
+        if not is_huggingface_space():
+            conn.close()
 
 
 def insert_chunk(chunk_id: str, document_id: str, chapter: str, position: int, text: str) -> None:
@@ -102,7 +136,7 @@ def insert_chunk(chunk_id: str, document_id: str, chapter: str, position: int, t
     """
     logger.debug(f"チャンク追加: ID「{chunk_id}」、ドキュメントID「{document_id}」、位置: {position}")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cur = conn.cursor()
     try:
         cur.execute(
@@ -114,7 +148,8 @@ def insert_chunk(chunk_id: str, document_id: str, chapter: str, position: int, t
         logger.error(f"チャンク追加エラー: {e}")
         raise
     finally:
-        conn.close()
+        if not is_huggingface_space():
+            conn.close()
 
 
 def get_chunk_by_id(chunk_id: str) -> Optional[Dict]:
@@ -129,7 +164,7 @@ def get_chunk_by_id(chunk_id: str) -> Optional[Dict]:
     """
     logger.debug(f"チャンク取得: ID「{chunk_id}」")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     try:
@@ -145,7 +180,8 @@ def get_chunk_by_id(chunk_id: str) -> Optional[Dict]:
         logger.error(f"チャンク取得エラー: {e}")
         raise
     finally:
-        conn.close()
+        if not is_huggingface_space():
+            conn.close()
 
 
 def get_document_list() -> List[Dict]:
@@ -157,7 +193,7 @@ def get_document_list() -> List[Dict]:
     """
     logger.info("全ドキュメントリストの取得")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     try:
@@ -170,7 +206,8 @@ def get_document_list() -> List[Dict]:
         logger.error(f"ドキュメント一覧取得エラー: {e}")
         raise
     finally:
-        conn.close()
+        if not is_huggingface_space():
+            conn.close()
 
 
 def get_chunks_by_document_id(document_id: str) -> List[Dict]:
@@ -185,7 +222,7 @@ def get_chunks_by_document_id(document_id: str) -> List[Dict]:
     """
     logger.info(f"ドキュメントのチャンク一覧取得: ID「{document_id}」")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     try:
@@ -198,7 +235,8 @@ def get_chunks_by_document_id(document_id: str) -> List[Dict]:
         logger.error(f"チャンク一覧取得エラー: {e}")
         raise
     finally:
-        conn.close()
+        if not is_huggingface_space():
+            conn.close()
 
 
 def delete_document(document_id: str) -> None:
@@ -213,7 +251,7 @@ def delete_document(document_id: str) -> None:
     """
     logger.info(f"ドキュメント削除: ID「{document_id}」")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cur = conn.cursor()
     try:
         # チャンク数を取得して記録
@@ -233,7 +271,8 @@ def delete_document(document_id: str) -> None:
         logger.error(f"ドキュメント削除エラー: {e}")
         raise
     finally:
-        conn.close()
+        if not is_huggingface_space():
+            conn.close()
 
 
 def document_exists(document_id: str) -> bool:
@@ -248,7 +287,7 @@ def document_exists(document_id: str) -> bool:
     """
     logger.debug(f"ドキュメント存在確認: ID「{document_id}」")
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = _get_connection()
     cur = conn.cursor()
     try:
         cur.execute("SELECT 1 FROM documents WHERE document_id = ? LIMIT 1", (document_id,))
@@ -260,4 +299,5 @@ def document_exists(document_id: str) -> bool:
         logger.error(f"ドキュメント存在確認エラー: {e}")
         raise
     finally:
-        conn.close()
+        if not is_huggingface_space():
+            conn.close()

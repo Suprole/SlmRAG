@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services import pdf_processor, embedder, faiss_manager, models
+from services import pdf_processor, embedder, faiss_manager, models, memory_store
 import uuid
 import os
 from datetime import datetime
@@ -19,15 +19,12 @@ async def upload_pdf(file: UploadFile = File(...)):
         title = file.filename
 
         # 2. PDFをMarkdownに変換（marker-pdfを使用）
-        # 注: このプロセスは特に大きなPDFファイルでは時間がかかる場合があります
         markdown = pdf_processor.convert_pdf_to_markdown(content)
-        os.makedirs("data/markdown", exist_ok=True)
-        md_path = f"data/markdown/{document_id}.md"
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(markdown)
+        
+        # Store markdown in memory or file system based on environment
+        memory_store.store_markdown(document_id, markdown)
 
         # 3. MarkdownをMarkdownHeaderChunkerを使用してチャンク化
-        # 文書をヘッダー構造に基づいて分割します
         chunks = pdf_processor.chunk_markdown(markdown)
 
         # 4. 各チャンクをベクトル化

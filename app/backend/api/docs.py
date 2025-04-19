@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from services import models, faiss_manager
+from services import models, faiss_manager, memory_store
 import os
 
 router = APIRouter()
@@ -31,21 +31,18 @@ def delete_document(document_id: str):
     except FileNotFoundError:
         pass
 
-    # Markdown削除
-    md_path = f"data/markdown/{document_id}.md"
-    if os.path.exists(md_path):
-        os.remove(md_path)
+    # Markdownをメモリまたはファイルシステムから削除
+    memory_store.delete_document_data(document_id)
 
     return {"message": f"Document {document_id} deleted."}
 
 
 @router.get("/docs/{document_id}/markdown")
 def get_markdown(document_id: str):
-    md_path = f"data/markdown/{document_id}.md"
-    if not os.path.exists(md_path):
+    # Try to get markdown from memory store first
+    content = memory_store.get_markdown(document_id)
+    
+    if content is None:
         raise HTTPException(status_code=404, detail="Markdown not found")
-
-    with open(md_path, "r", encoding="utf-8") as f:
-        content = f.read()
 
     return {"document_id": document_id, "markdown": content}

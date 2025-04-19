@@ -3,6 +3,7 @@ import json
 import faiss
 import numpy as np
 from .logger import Logger
+from . import memory_store
 
 # ロガーの初期化
 logger = Logger(name="faiss_manager")
@@ -28,23 +29,15 @@ def create_index(document_id: str, embeddings: list[dict]) -> None:
     """
     logger.info(f"インデックス作成開始: ドキュメントID「{document_id}」、チャンク数: {len(embeddings)}")
     
-    os.makedirs(FAISS_DIR, exist_ok=True)
-    logger.debug(f"インデックスディレクトリ確認: {FAISS_DIR}")
-
     vectors = np.array([e["vector"] for e in embeddings], dtype="float32")
     index = faiss.IndexFlatL2(vectors.shape[1])
     index.add(vectors)
     logger.debug(f"FAISSインデックスに {vectors.shape[0]} ベクトル（次元: {vectors.shape[1]}）を追加")
 
     chunk_ids = [e["chunk_id"] for e in embeddings]
-    index_path = get_index_path(document_id)
-    faiss.write_index(index, index_path)
-    logger.debug(f"インデックスをファイルに保存: {index_path}")
-
-    meta_path = get_meta_path(document_id)
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(chunk_ids, f)
-    logger.debug(f"メタデータをファイルに保存: {meta_path}")
+    
+    # Use memory store for Hugging Face Space
+    memory_store.store_faiss_index(document_id, index, chunk_ids)
     
     logger.info(f"インデックス作成完了: ドキュメントID「{document_id}」")
 
@@ -61,6 +54,15 @@ def load_index(document_id: str) -> tuple[faiss.Index, list[str]]:
     """
     logger.info(f"インデックス読み込み開始: ドキュメントID「{document_id}」")
     
+    # Try loading from memory store first
+    result = memory_store.get_faiss_index(document_id)
+    
+    if result is not None:
+        index, chunk_ids = result
+        logger.debug(f"メモリからFAISSインデックスを読み込み、チャンク数: {len(chunk_ids)}")
+        return index, chunk_ids
+    
+    # If not in memory or not on HF Spaces, load from file
     index_path = get_index_path(document_id)
     index = faiss.read_index(index_path)
     logger.debug(f"FAISSインデックスを読み込み: {index_path}")
@@ -83,13 +85,23 @@ def delete_index(document_id: str) -> None:
     """
     logger.info(f"インデックス削除開始: ドキュメントID「{document_id}」")
     
-    index_path = get_index_path(document_id)
-    meta_path = get_meta_path(document_id)
+    # Delete from memory store first
+    memory_store.delete_document_data(document_id)
     
-    os.remove(index_path)
-    logger.debug(f"インデックスファイルを削除: {index_path}")
-    
-    os.remove(meta_path)
-    logger.debug(f"メタデータファイルを削除: {meta_path}")
+    # If not on HF Spaces, also delete from file system
+    if not memory_store.is_huggingface_space():
+        index_path = get_index_path(document_id)
+        meta_path = get_meta_path(document_id)
+        
+        try:
+            if os.path.exists(index_path):
+                os.remove(index_path)
+                logger.debug(f"インデックスファイルを削除: {index_path}")
+            
+            if os.path.exists(meta_path):
+                os.remove(meta_path)
+                logger.debug(f"メタデータファイルを削除: {meta_path}")
+        except Exception as e:
+            logger.error(f"ファイル削除中にエラー: {e}")
     
     logger.info(f"インデックス削除完了: ドキュメントID「{document_id}」")
