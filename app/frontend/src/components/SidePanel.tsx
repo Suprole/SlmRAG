@@ -15,7 +15,7 @@ const SidePanel: React.FC<Props> = ({ documentId, chunks, highlightedChunkId }) 
   const [markdown, setMarkdown] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
-  const highlightRef = useRef<HTMLSpanElement | null>(null);
+  // const highlightRef = useRef<HTMLSpanElement | null>(null); // 未使用なのでコメントアウト
   
   // すべてのハイライト済みチャンクIDを追跡
   const [activeHighlightIds, setActiveHighlightIds] = useState<Set<string>>(new Set());

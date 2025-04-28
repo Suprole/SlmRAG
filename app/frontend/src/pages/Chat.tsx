@@ -1,7 +1,7 @@
 // Chat.tsx
 
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { getChunks } from "../api/docs";
 import { postChat } from "../api/chat";
 import { Chunk, ChatMessage } from "../types";
@@ -10,7 +10,7 @@ import ReactMarkdown from "react-markdown";
 
 const Chat: React.FC = () => {
   const { documentId } = useParams();
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // 未使用なのでコメントアウト
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chunks, setChunks] = useState<Chunk[]>([]);

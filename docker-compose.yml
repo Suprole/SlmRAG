@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./app/backend
+    volumes:
+      # モデルファイルをホストからマウント
+      - ./app/backend/models:/app/models
+      # データディレクトリをホストからマウント（永続化）
+      - ./app/backend/data:/app/data
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+    # 必要に応じて環境変数を設定
+    # environment:
+    #   - KEY=VALUE
+
+  frontend:
+    build:
+      context: ./app/frontend
+      args:
+        - VITE_API_URL=http://backend:8000/api
+    ports:
+      # ホストの5173番ポートをコンテナの80番ポートにマッピング
+      - "5173:80"
+    depends_on:
+      - backend # backendの起動を待つ（サービス準備完了は保証しない）
+    networks:
+      - app-network
+    # command: ["nginx", "-g", "daemon off;"] # デフォルトコマンドを上書きする場合 
+
+networks:
+  app-network:
+    driver: bridge 

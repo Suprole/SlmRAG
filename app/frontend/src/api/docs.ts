@@ -1,6 +1,7 @@
 import { Chunk } from "../types/index";
 
-const API_URL = "http://localhost:8000/api";
+// ビルド時に設定された環境変数を使用
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 export async function uploadPdf(file: File): Promise<{ document_id: string }> {
   const formData = new FormData();

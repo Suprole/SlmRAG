@@ -16,10 +16,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ✅ CORSミドルウェア設定（ローカル開発用に緩め）
+# ✅ CORSミドルウェア設定（Docker間の通信を許可）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://frontend", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -33,7 +33,6 @@ mkdir -p app/backend/data/faiss
 mkdir -p app/backend/data/markdown
 ```
 
-
 1. バックエンドディレクトリに移動します：
 
 ```bash
@@ -116,3 +115,37 @@ npm run dev
 - FAISS（ベクトル検索）
 - Sentence Transformers
 - TinySwallow-1.5B (ローカル言語モデル)
+
+## Docker での実行方法
+
+Docker と Docker Compose がインストールされている環境では、以下の手順で簡単にアプリケーションを起動できます。
+
+1.  **モデルファイルの配置**:
+    現在のセットアップ手順に従い、`app/backend/models` ディレクトリに `tinyswallow-1.5b-instruct-q8_0.gguf` ファイルを配置してください。
+
+2.  **データディレクトリの作成**:
+    以下のコマンドを実行して、データ永続化用のディレクトリを作成します（既に存在する場合は不要です）。
+
+    ```bash
+    mkdir -p app/backend/data/db
+    mkdir -p app/backend/data/faiss
+    mkdir -p app/backend/data/markdown
+    ```
+
+3.  **Docker Compose の起動**:
+    リポジトリのルートディレクトリで以下のコマンドを実行します。初回起動時はイメージのビルドが行われます。
+
+    ```bash
+    docker-compose up --build -d
+    ```
+
+    `-d` オプションにより、コンテナはバックグラウンドで起動します。
+
+4.  **アクセス**:
+    ブラウザで http://localhost:5173 にアクセスします。
+
+5.  **停止**:
+    アプリケーションを停止するには、以下のコマンドを実行します。
+    ```bash
+    docker-compose down
+    ```
